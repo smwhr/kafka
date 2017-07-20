@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="kafka">
+<head>
+  <meta charset="UTF-8">
+  <title>Kafka</title>
+  <link href="https://fonts.googleapis.com/css?family=Roboto+Mono|Work+Sans" rel="stylesheet">
+  <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.6/angular.min.js"></script>
+  <style>
+    body{font-family:"Roboto Mono",monospace;font-size:30px;background-color: black;color:white;}
+    .line{margin:0;padding: 0;height: 1em;line-height: 1em;}
+    .line span{display: inline-block;min-width:0.6em;}
+    .line span.W{background-color: white;color:white;}
+    .line span.T{background-color: grey;color:grey;}
+    .line span.E{background-color: black;color:black;}
+
+    h1{float:right;margin-right: 1em;margin-top: 0.1em;}
+    .copy{position: absolute; bottom:1em;right:1em;font-family: "Work Sans";font-size: 12px;}
+    .copy a{color:#82e4e1; }
+  </style>
+
+  <script>
+    var app = angular.module("kafka",[]);
+        app.controller('gameController', ['$scope', '$document', function($scope, $document){
+          var ctrl = this;
+
+          var A = [20, 36];
+          var CE = 1;
+
+          ctrl.score = 0;
+          ctrl.current_score = 0;
+
+          ctrl.init = function(){
+            // Réinitialisation du niveau
+            ctrl.tableau = [];
+            ctrl.player = [10,18];
+            ctrl.teleporters = [];
+            ctrl.ennemies = [];
+            ctrl.current_score = 0;
+
+            // Contruction du labyrinthe
+            for(x = 0 ; x < A[0] ; x++){
+              var line = [];
+              for(y = 0 ; y < A[1] ; y++){
+                if(x == 9 && y == A[1] -1){ line.push("E");
+                }else if(x == 9 && y == A[1] - 2){ line.push("");
+                }else if(   
+                      x == 0 || x == A[0]-1 || y == 0 || y == A[1]-1 // bordure
+                   || (x%2 == 0 && y%2 == 0)                         // une case sur deux colorée
+                  ){ line.push("W");
+                }else{
+                  if(ctrl.tableau[x-1][y-1] == "W") line.push("");  // en bas à droite d'une pleine : une vide
+                  else line.push((Math.random() < 0.333) ? "W" : ""); // 3/10 de mur sinon
+                }
+              }
+              ctrl.tableau.push(line);
+            }
+            // teleporteurs
+            for (var i = 0; i < 6; i++) {
+              do{
+                var tx = Math.round((Math.random()*8)+2)*2-1;
+                var ty = Math.round((Math.random()*10)+4)*2-1;
+              }while(ctrl.tableau[tx][ty] == "W")
+              ctrl.tableau[tx][ty] = "T";
+              ctrl.teleporters.push([tx,ty]);
+            }
+
+            //ennemies (plutôt sur la droite)
+            for (var i = 0; i < 15; i++) {
+              do{
+                var tx = Math.round((Math.random()*15)+2)-1;
+                var ty = Math.round((Math.random()*10)+25)-1;
+              }while(ctrl.tableau[tx][ty] == "W" || ctrl.tableau[tx][ty] == "T")
+              ctrl.tableau[tx][ty] = "#";
+              ctrl.ennemies.push([tx,ty]);
+            }
+
+            // player (plutôt sur la gauche)
+            do{
+                var tx = Math.round((Math.random()*8)+2)*2-1;
+                var ty = Math.round((Math.random()*10)+4)-1;
+            }while(ctrl.tableau[tx][ty] == "W" || ctrl.tableau[tx][ty] == "T" || ctrl.tableau[tx][ty] == "#")
+            ctrl.move(tx,ty)
+          }
+
+
+
+          ctrl.move = function(x,y, donotteleport){
+            if(ctrl.tableau[x][y] == "#"){
+              ctrl.score = Math.max(ctrl.score - 10, 0);
+              return false; //ennemy blocks
+            }
+            if(ctrl.tableau[x][y] == "W"){
+              ctrl.score = Math.max(ctrl.score - 10, 0);
+              return false; //wall blocks
+            }
+            if(ctrl.tableau[x][y] == "E"){ 
+              ctrl.exit(); return false; //exits labyrinth
+            } 
+            ctrl.tableau[ctrl.player[0]][ctrl.player[1]] = "";
+            ctrl.player[0] = x; ctrl.player[1] = y;
+            ctrl.tableau[ctrl.player[0]][ctrl.player[1]] = "0";
+
+            // trigger teleporters (une seule fois : va au suivant)
+            for(var t in ctrl.teleporters){
+              if(ctrl.teleporters[t][0] == x && ctrl.teleporters[t][1] == y && !donotteleport){
+                var next_t = (parseInt(t)+1)%ctrl.teleporters.length;
+                ctrl.move(ctrl.teleporters[next_t][0],ctrl.teleporters[next_t][1], true);
+                break;
+              }
+            }
+
+            ctrl.current_score++;
+            ctrl.moveEnnemies();
+          }
+
+          ctrl.moveEnnemies = function(){
+            for(var e in ctrl.ennemies){
+              var dx = Math.sign(ctrl.player[0] - ctrl.ennemies[e][0]);
+              var dy = Math.sign(ctrl.player[1] - ctrl.ennemies[e][1]);
+              if( ctrl.tableau[ctrl.ennemies[e][0]+dx][ctrl.ennemies[e][1]+dy] == ""
+                ||ctrl.tableau[ctrl.ennemies[e][0]+dx][ctrl.ennemies[e][1]+dy] == "T"
+                ){
+                ctrl.tableau[ctrl.ennemies[e][0]][ctrl.ennemies[e][1]] = "";
+                ctrl.tableau[ctrl.ennemies[e][0]+dx][ctrl.ennemies[e][1]+dy] = "#";
+                ctrl.ennemies[e] = [ctrl.ennemies[e][0]+dx, ctrl.ennemies[e][1]+dy]
+              }
+            }
+          }
+
+          ctrl.left = function(){ ctrl.move(ctrl.player[0],ctrl.player[1]-1) }
+          ctrl.right = function(){ctrl.move(ctrl.player[0],ctrl.player[1]+1)}
+          ctrl.up = function(){ctrl.move(ctrl.player[0]-1,ctrl.player[1])}
+          ctrl.down = function(){ctrl.move(ctrl.player[0]+1,ctrl.player[1])}
+
+          ctrl.destroy = function(){
+            for(x = -1 ; x <= 1 ; x ++){
+              for(y = -1 ; y <= 1 ; y ++){
+                if(y == 0 && x == 0) continue;
+                if(  ctrl.player[0]+x == 0      || ctrl.player[1]+y == 0
+                  || ctrl.player[0]+x == A[0]-1 || ctrl.player[1]+y == A[1]-1
+                  || ctrl.tableau[ctrl.player[0]+x][ctrl.player[1]+y] != "W"
+                  )continue
+                ctrl.tableau[ctrl.player[0]+x][ctrl.player[1]+y] = "";
+              }
+            }
+            ctrl.score = Math.max(ctrl.score - ctrl.current_score, 0);
+          }
+
+          ctrl.renonce = function(){
+            ctrl.score = Math.max(ctrl.score - 100 + ctrl.current_score, 0);
+            ctrl.init()
+          }
+
+          ctrl.exit = function(){
+            ctrl.score += 2*ctrl.current_score;
+            if(ctrl.score >= 1000){
+              ctrl.tableau[9].push("Vous êtes libre");
+            }else{
+              ctrl.init()
+            }
+            
+          }
+
+          $document.bind("keydown", function($event) {
+              if ($event.keyCode == 38){
+                  ctrl.up(); $event.preventDefault();
+              }else if ($event.keyCode == 39){
+                  ctrl.right();$event.preventDefault();
+              }else if ($event.keyCode == 40){
+                  ctrl.down();$event.preventDefault();
+              }else if ($event.keyCode == 37){
+                  ctrl.left();$event.preventDefault();
+              }else if ($event.keyCode == 68){ //t
+                  ctrl.destroy();$event.preventDefault();
+              }else if ($event.keyCode == 82){ //r
+                  ctrl.renonce();$event.preventDefault();
+              }
+              $scope.$apply();
+          });
+
+
+          ctrl.init();
+        }])
+  </script>
+</head>
+<body ng-controller="gameController as ctrl">
+
+  <h1>Kafka</h1>
+
+  <div class="line" ng-repeat="line in ctrl.tableau track by $index">
+    <span ng-repeat="chr in line track by $index" ng-class="chr">{{chr}}</span>
+  </div>
+
+  <div class="score">
+  Score = {{ctrl.score}}/1000<br />
+  &larr;&uarr;&rarr;&darr; - [R]enoncer - [D]étruire
+  </div>
+
+  <div class="copy"><a href="http://troisyaourts.com" target="_blank">©TroisYaourts 2017</a> - cette version <a href="http://twitter.com/smwhr/" target="_blank">@smwhr</a> d'après un code source original publié en juin 1988 dans <a href="http://www.abandonware-magazines.org/affiche_mag.php?mag=185&num=4018&album=oui" target="_blank">Jeux &amp; Stratégie Nº51 (pages 88-89)</a>.</div>
+  
+</body>
+</html>
