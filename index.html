@@ -13,7 +13,8 @@
     .line span.T{background-color: grey;color:grey;}
     .line span.E{background-color: black;color:black;}
 
-    h1{float:right;margin-right: 1em;margin-top: 0.1em;}
+    h1{float:right;margin-right: 30px;margin-top: 0.1em;width:300px;}
+    .legend{float:right;clear:both;margin-right: 30px;width:300px;}
     .copy{position: absolute; bottom:1em;right:1em;font-family: "Work Sans";font-size: 12px;}
     .copy a{color:#82e4e1; }
   </style>
@@ -186,6 +187,20 @@
 <body ng-controller="gameController as ctrl">
 
   <h1>Kafka</h1>
+  <div class="legend">
+    <div class="line">
+      <span>0</span>  : Vous
+    </div>
+    <div class="line">
+      <span class="T">T</span> : Téléporteur
+    </div>
+    <div class="line">
+      <span class="W">W</span> : Mur
+    </div>
+    <div class="line">
+      <span>#</span> : Ennemi
+    </div>
+  </div>
 
   <div class="line" ng-repeat="line in ctrl.tableau track by $index">
     <span ng-repeat="chr in line track by $index" ng-class="chr">{{chr}}</span>
@@ -196,7 +211,7 @@
   &larr;&uarr;&rarr;&darr; - [R]enoncer - [D]étruire
   </div>
 
-  <div class="copy"><a href="http://troisyaourts.com" target="_blank">©TroisYaourts 2017</a> - cette version <a href="http://twitter.com/smwhr/" target="_blank">@smwhr</a> d'après un code source original publié en juin 1988 dans <a href="http://www.abandonware-magazines.org/affiche_mag.php?mag=185&num=4018&album=oui" target="_blank">Jeux &amp; Stratégie Nº51 (pages 88-89)</a>.</div>
+  <div class="copy"><a href="http://troisyaourts.com" target="_blank">©TroisYaourts 2017</a> - cette version <a href="http://twitter.com/smwhr/" target="_blank">@smwhr</a> d'après un code source original en Basic publié en juin 1988 dans <a href="http://www.abandonware-magazines.org/affiche_mag.php?mag=185&num=4018&album=oui" target="_blank">Jeux &amp; Stratégie Nº51 (pages 88-89)</a>.</div>
   
 </body>
 </html>
