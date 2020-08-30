@@ -7,4 +7,4 @@ Jeux & Stratégie Nº51 (pages 88-89)
 Les deux pages scannées du magazine sont disponibles dans le repository.
 
 
-Version jouable sur http://kafka.smwhr.net/
+Version jouable sur http://smwhr.itch.io/kafka
